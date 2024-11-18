@@ -1,35 +1,43 @@
-name: Publish Docker Image to Docker Hub
+name: Node.js CI
 
 on:
-
   push:
-
-    branches: ['master']
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  schedule:
+    - cron: '0 */6 * * *'  # BY 𝙎-𝙏𝞢𝞜 
 
 jobs:
-
   build:
 
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        node-version: [20.x]
+
     steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
 
-      - uses: actions/checkout@v3
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
 
-      - name: Log in to Docker Hub
+    - name: Install dependencies
+      run: npm install
 
-        uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
+    - name: Install FFmpeg
+      run: sudo apt-get install -y ffmpeg
 
-        with:
+    - name: Start application with timeout
+      run: |
+        timeout 21590s npm start  # Limite l'exécution à 5h 59m 50s
 
-          username: ${{ secrets.DOCKER_USERNAME }}
-
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Build the Docker image
-
-        run: docker build . --file Dockerfile --tag ${{ secrets.DOCKER_USERNAME }}/cheemsbotmd8
-
-      - name: Docker Push
-
-        run: docker push ${{ secrets.DOCKER_USERNAME }}/cheemsbotmd8
+    - name: Save state (Optional)
+      run: |
+        ./save_state.sh
